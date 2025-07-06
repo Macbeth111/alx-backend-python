@@ -4,50 +4,43 @@ import sys
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': ''
+    'password': '',  # Replace if necessary
+    'database': 'ALX_prodev'
 }
 
-DATABASE_NAME = 'ALX_prodev'
 TABLE_NAME = 'user_data'
 
 
-def streamusersinbatches(batchsize):
+def stream_users_in_batches(batch_size):
     """
-    Generator that fetches rows in batches from the user_data table.
-    Yields a list of rows per batch.
+    Generator that fetches rows from the database in batches.
+    Yields each batch as a list of dictionaries.
     """
-    connection = None
-    cursor = None
     try:
-        config = DB_CONFIG.copy()
-        config['database'] = DATABASE_NAME
-        connection = mysql.connector.connect(**config)
-
-        if not connection.is_connected():
-            return
-
-        cursor = connection.cursor(dictionary=True)
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
         cursor.execute(f"SELECT * FROM {TABLE_NAME}")
+        
         while True:
-            batch = cursor.fetchmany(batchsize)
+            batch = cursor.fetchmany(batch_size)
             if not batch:
                 break
             yield batch
 
     except mysql.connector.Error as err:
-        print(f"MySQL error: {err}", file=sys.stderr)
+        print(f"Database error: {err}", file=sys.stderr)
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
-            connection.close()
+        if conn and conn.is_connected():
+            conn.close()
 
 
-def batch_processing(batchsize):
+def batch_processing(batch_size):
     """
-    Prints users older than 25, using streamusersinbatches.
+    Processes users in batches and prints only those over age 25.
     """
-    for batch in streamusersinbatches(batchsize):
+    for batch in stream_users_in_batches(batch_size):
         for user in batch:
             if user['age'] > 25:
                 print(user)
