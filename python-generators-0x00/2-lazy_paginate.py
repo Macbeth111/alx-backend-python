@@ -1,103 +1,62 @@
 import mysql.connector
 import sys
 
-# --- Database Configuration (Self-contained for reuse) ---
+# --- Database Configuration ---
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': ''  # 🔐 Replace with your actual MySQL root password
+    'password': ''  # IMPORTANT: Replace with your MySQL root password
 }
-
 DATABASE_NAME = 'ALX_prodev'
 TABLE_NAME = 'user_data'
 
-
-def connect_to_database():
-    """
-    Establishes a connection to the ALX_prodev MySQL database.
-
-    Returns:
-        mysql.connector.connection.MySQLConnection or None:
-        Connection object if successful, None otherwise.
-    """
+def connect_to_prodev():
+    """Connects to the ALX_prodev MySQL database."""
     try:
-        config = DB_CONFIG.copy()
-        config['database'] = DATABASE_NAME
-        connection = mysql.connector.connect(**config)
-        return connection
+        db_config_with_db = DB_CONFIG.copy()
+        db_config_with_db['database'] = DATABASE_NAME
+        return mysql.connector.connect(**db_config_with_db)
     except mysql.connector.Error as err:
-        print(f"[Connection Error] Could not connect to '{DATABASE_NAME}': {err}", file=sys.stderr)
+        print(f"Connection error: {err}", file=sys.stderr)
         return None
 
-
-def fetch_user_page(page_size, offset):
+def paginate_users(page_size, offset):
     """
-    Fetches a single page of user records using LIMIT and OFFSET.
-
-    Args:
-        page_size (int): Number of records to fetch.
-        offset (int): Number of records to skip before starting.
-
-    Returns:
-        List[dict]: A list of user rows as dictionaries.
+    Fetches a page of user data from the user_data table using LIMIT and OFFSET.
     """
-    connection = None
-    cursor = None
     try:
-        connection = connect_to_database()
+        connection = connect_to_prodev()
         if not connection or not connection.is_connected():
             return []
-
         cursor = connection.cursor(dictionary=True)
         query = f"SELECT * FROM {TABLE_NAME} LIMIT %s OFFSET %s"
         cursor.execute(query, (page_size, offset))
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return rows
+    except Exception as e:
+        print(f"Error in paginate_users: {e}", file=sys.stderr)
+        return []
 
-    except mysql.connector.Error as err:
-        print(f"[Database Error] fetch_user_page failed: {err}", file=sys.stderr)
-    except Exception as ex:
-        print(f"[Unexpected Error] fetch_user_page failed: {ex}", file=sys.stderr)
-    finally:
-        if cursor:
-            cursor.close()
-        if connection and connection.is_connected():
-            connection.close()
-
-    return []
-
-
-def lazy_paginate_users(page_size):
+def lazypaginate(page_size):
     """
-    Lazily paginates through the user_data table, yielding one page at a time.
-
-    Args:
-        page_size (int): Number of records per page.
-
-    Yields:
-        List[dict]: A page of user rows.
+    Generator that lazily fetches user pages from the database one page at a time.
+    Only fetches the next page when needed.
     """
     offset = 0
     while True:
-        page = fetch_user_page(page_size, offset)
-        if not page:
+        users = paginate_users(page_size, offset)
+        if not users:
             break
-        yield page
+        yield users
         offset += page_size
 
-
-# --- Example Usage (For Testing or Integration) ---
+# Example usage
 if __name__ == "__main__":
-    DEMO_PAGE_SIZE = 100  # Set desired page size
-
-    print(f"📄 Lazy pagination of users with page size: {DEMO_PAGE_SIZE}\n")
-
     try:
-        for page_num, page in enumerate(lazy_paginate_users(DEMO_PAGE_SIZE), start=1):
-            print(f"--- Page {page_num} (Offset: {(page_num - 1) * DEMO_PAGE_SIZE}) ---")
+        for page in lazypaginate(100):
             for user in page:
                 print(user)
     except BrokenPipeError:
-        # Handles cases like piping output to `head`
         sys.stderr.close()
-    except Exception as err:
-        print(f"[Runtime Error] Pagination failed: {err}", file=sys.stderr)
