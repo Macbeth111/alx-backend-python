@@ -1,33 +1,26 @@
-import mysql.connector
-from seed import connect_to_prodev
+from itertools import islice
+import sys
+import os
 
-def stream_users_in_batches(batch_size):
-    """
-    Generator that yields individual users from the database in batches.
-    """
-    offset = 0
-    while True:
-        conn = connect_to_prodev()
-        if not conn:
-            break
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(f"SELECT * FROM user_data LIMIT {batch_size} OFFSET {offset}")
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+# Add the current directory to Python path to find seed.py
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+import seed as seed
+connection = seed.connect_to_prodev()
 
-        if not rows:
-            break
+# Batch processing of users
+def batch_processing(batch_size=10):
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT * FROM user_data WHERE age > 25 LIMIT {batch_size}")
+    for row in cursor:
+        yield row
+    cursor.close()
+    connection.close()
 
-        for row in rows:
-            yield row  # ✅ Yield individual user, not a batch
-
-        offset += batch_size
-
-def batch_processing(batch_size):
-    """
-    Processes each user from stream_users_in_batches and filters users older than 25.
-    """
-    for user in stream_users_in_batches(batch_size):
-        if user['age'] > 25:
-            print(user)
+# Stream users in batches
+def stream_users_in_batches(batch_size=10):
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT * FROM user_data LIMIT {batch_size}")
+    for row in cursor:
+        yield row
+    cursor.close()
+    connection.close()
