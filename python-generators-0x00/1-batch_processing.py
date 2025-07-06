@@ -1,4 +1,5 @@
 import mysql.connector
+import sys
 
 # --- Database Configuration (Copied from previous scripts for self-containment) ---
 DB_CONFIG = {
@@ -9,90 +10,101 @@ DB_CONFIG = {
 DATABASE_NAME = 'ALX_prodev'
 TABLE_NAME = 'user_data'
 
-def stream_users_in_batches(batch_size):
+def connect_to_prodev():
     """
-    A generator function that fetches rows from the 'user_data' table
-    in the ALX_prodev database in specified batch sizes.
+    Connects to the ALX_prodev database in MySQL.
+    Returns a connection object to ALX_prodev if successful, None otherwise.
+    """
+    try:
+        # Add database name to config for direct connection
+        db_config_with_db = DB_CONFIG.copy()
+        db_config_with_db['database'] = DATABASE_NAME
+        conn = mysql.connector.connect(**db_config_with_db)
+        # print(f"Successfully connected to database '{DATABASE_NAME}'.") # Optional: for debugging
+        return conn
+    except mysql.connector.Error as err:
+        print(f"Error connecting to database '{DATABASE_NAME}': {err}", file=sys.stderr)
+        return None
+
+def paginate_users(page_size, offset):
+    """
+    Fetches a single page of user data from the user_data table.
 
     Args:
-        batch_size (int): The number of rows to fetch in each batch.
+        page_size (int): The maximum number of rows to fetch for the current page.
+        offset (int): The starting offset for fetching rows.
 
-    Yields:
+    Returns:
         list: A list of dictionaries, where each dictionary represents a user row.
     """
     connection = None
     cursor = None
+    rows = []
     try:
-        # Establish connection to the ALX_prodev database
-        db_config_with_db = DB_CONFIG.copy()
-        db_config_with_db['database'] = DATABASE_NAME
-        connection = mysql.connector.connect(**db_config_with_db)
+        connection = connect_to_prodev()
+        if not connection or not connection.is_connected():
+            return [] # Return empty list if connection fails
 
-        if not connection.is_connected():
-            print(f"Error: Could not connect to database '{DATABASE_NAME}'.")
-            return # Exit generator if connection fails
-
-        # Use buffered=True for fetching large results, but for true streaming
-        # with yield, fetching in chunks with fetchmany is more appropriate.
-        # dictionary=True ensures rows are returned as dictionaries.
         cursor = connection.cursor(dictionary=True)
-        query = f"SELECT user_id, name, email, age FROM user_data"
+        # Use LIMIT and OFFSET to fetch a specific page
+        # Updated to use SELECT * as per the objective's example
+        query = f"SELECT * FROM user_data LIMIT {page_size} OFFSET {offset}"
         cursor.execute(query)
-
-        while True:
-            # Fetch a batch of rows
-            batch = cursor.fetchmany(batch_size)
-            if not batch:
-                # No more rows to fetch, break the loop
-                break
-            yield batch # Yield the entire batch (list of user dictionaries)
-
+        rows = cursor.fetchall() # Fetch all rows for the current page
     except mysql.connector.Error as err:
-        print(f"Database error in stream_users_in_batches: {err}")
+        print(f"Database error in paginate_users: {err}", file=sys.stderr)
     except Exception as e:
-        print(f"An unexpected error occurred in stream_users_in_batches: {e}")
+        print(f"An unexpected error occurred in paginate_users: {e}", file=sys.stderr)
     finally:
-        # Ensure the cursor and connection are closed
         if cursor:
             cursor.close()
         if connection and connection.is_connected():
             connection.close()
+    return rows
 
-def batch_processing(batch_size):
+def lazy_paginate(page_size):
     """
-    A generator function that processes user data in batches.
-    It fetches batches using stream_users_in_batches and filters
-    users older than 25.
+    A generator function that lazily loads pages of user data from the database.
+    It fetches the next page only when needed.
 
     Args:
-        batch_size (int): The size of batches to fetch from the database.
+        page_size (int): The number of users to include in each page.
 
     Yields:
-        dict: A dictionary representing a user who is older than 25.
+        list: A list of dictionaries, where each dictionary represents a user row
+              for the current page.
     """
-    # Loop 1: Iterates over batches yielded by stream_users_in_batches
-    for batch in stream_users_in_batches(batch_size):
-        # Loop 2: Iterates over individual users within each batch
-        for user in batch:
-            # Loop 3 (implicit/conditional check, not a full loop):
-            # The 'if' condition acts as a filter.
-            if user['age'] > 25:
-                yield user
+    offset = 0
+    # This is the single loop as per the requirement
+    while True:
+        page = paginate_users(page_size, offset)
+        if not page:
+            # No more data to fetch, exit the generator
+            break
+        yield page
+        offset += page_size # Increment offset for the next page
 
-# Example of how to use the batch_processing generator (similar to 2-main.py)
+# Example of how to use the lazy_paginate generator (similar to 3-main.py)
 if __name__ == "__main__":
-    import sys
+    # Test the seed.py connection setup first if you haven't
+    # import seed # You would normally import seed and run its main to ensure DB is set up
+    # seed.main() # Assuming seed.py has a main function to run setup
 
-    # Set a batch size for demonstration
-    demo_batch_size = 50
+    demo_page_size = 100 # Example page size
 
-    print(f"Processing users in batches of {demo_batch_size}, filtering for age > 25:")
+    print(f"Lazily paginating users with a page size of {demo_page_size}:")
     try:
-        # Iterate over the processed users (which are yielded one by one)
-        for processed_user in batch_processing(demo_batch_size):
-            print(processed_user)
+        # Iterate over pages yielded by lazy_paginate
+        for page_num, page in enumerate(lazy_paginate(demo_page_size)):
+            print(f"\n--- Page {page_num + 1} (Offset: {page_num * demo_page_size}) ---")
+            if not page:
+                print("No more users.")
+                break
+            # Iterate over users within the current page
+            for user in page:
+                print(user)
     except BrokenPipeError:
         # This can happen if output is piped to `head` and it closes early
         sys.stderr.close()
     except Exception as e:
-        print(f"An error occurred during batch processing: {e}", file=sys.stderr)
+        print(f"An error occurred during lazy pagination: {e}", file=sys.stderr)
