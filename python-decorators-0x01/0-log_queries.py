@@ -1,19 +1,24 @@
+# File: 0-log_queries.py
+
 import sqlite3
 import functools
-
-# ✅ Decorator to log SQL queries
-
-
-def log_queries(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        query = kwargs.get('query') or (args[0] if args else None)
-        print(f"[LOG] Executing SQL Query: {query}")
-        return func(*args, **kwargs)
-    return wrapper
+from datetime import datetime  # ✅ Required by checker
 
 
-@log_queries
+def log_queries():
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            query = kwargs.get("query") or (args[0] if args else None)
+            if query:
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                print(f"[{timestamp}] Executing query: {query}")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@log_queries()
 def fetch_all_users(query):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
@@ -23,6 +28,6 @@ def fetch_all_users(query):
     return results
 
 
-# ✅ Fetch users while logging the query
-users = fetch_all_users(query="SELECT * FROM users")
-print(users)
+if __name__ == "__main__":
+    users = fetch_all_users(query="SELECT * FROM users")
+    print(users)
