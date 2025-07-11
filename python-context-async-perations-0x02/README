@@ -1,0 +1,4 @@
+cd ~/OneDrive/Desktop/alx-backend-python
+git add python-context-async-perations-0x02
+git commit -m "Completed all tasks in context managers and async project"
+git push origin master
