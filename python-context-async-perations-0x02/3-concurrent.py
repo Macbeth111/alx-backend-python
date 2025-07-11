@@ -3,7 +3,7 @@
 import asyncio
 import aiosqlite
 
-# ✅ Async function to fetch all users
+# ✅ async_fetch_users: fetch all users
 
 
 async def async_fetch_users():
@@ -14,7 +14,7 @@ async def async_fetch_users():
             for user in users:
                 print(user)
 
-# ✅ Async function to fetch users older than 40
+# ✅ async_fetch_older_users: fetch users older than 40
 
 
 async def async_fetch_older_users():
@@ -25,7 +25,7 @@ async def async_fetch_older_users():
             for user in older_users:
                 print(user)
 
-# ✅ Run both queries concurrently
+# ✅ Run both concurrently
 
 
 async def fetch_concurrently():
@@ -34,6 +34,6 @@ async def fetch_concurrently():
         async_fetch_older_users()
     )
 
-# ✅ Entry point
+# ✅ Run entry point
 if __name__ == "__main__":
     asyncio.run(fetch_concurrently())
