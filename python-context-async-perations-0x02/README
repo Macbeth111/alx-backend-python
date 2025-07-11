@@ -1,4 +1,8 @@
-cd ~/OneDrive/Desktop/alx-backend-python
-git add python-context-async-perations-0x02
-git commit -m "Completed all tasks in context managers and async project"
-git push origin master
+# Python Context Managers and Async Operations
+
+This project explores context managers and asynchronous programming in Python.
+
+## Tasks:
+1. **DatabaseConnection**: Class-based context manager using `__enter__` and `__exit__`.
+2. **ExecuteQuery**: Reusable context manager for parameterized SQL queries.
+3. **Async Queries**: Concurrently fetch users using `asyncio.gather()` and `aiosqlite`.
