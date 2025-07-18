@@ -102,7 +102,7 @@ class TestGithubOrgClient(unittest.TestCase):
             "firmata.py",
         ],
     }
-])
+], class_name_func=lambda cls, num, params_dict: f"{cls.__name__}_{num}")
 class TestIntegrationGithubOrgClient(unittest.TestCase):
     """Integration tests for GithubOrgClient using mocked fixtures."""
 
