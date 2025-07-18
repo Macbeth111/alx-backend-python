@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """
 Unit and integration tests for GithubOrgClient.
+Covers:
+- org property
+- _public_repos_url property
+- public_repos method
+- has_license static method
+Uses mock APIs and parameterized test cases.
 """
 
 import unittest
@@ -102,8 +108,8 @@ class TestGithubOrgClient(unittest.TestCase):
             "firmata.py",
         ],
     }
-], class_name_func=lambda cls, num, params_dict: f"{cls.__name__}_{num}")
-class TestIntegrationGithubOrgClient(unittest.TestCase):
+])
+class TestGithubOrgClientParameterized(unittest.TestCase):
     """Integration tests for GithubOrgClient using mocked fixtures."""
 
     @classmethod
@@ -112,7 +118,6 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher = patch("requests.get")
         cls.mock_get = cls.get_patcher.start()
 
-        # Provide responses in order for each test
         cls.mock_get.side_effect = [
             MockResponse(cls.org_payload),
             MockResponse(cls.repos_payload),
