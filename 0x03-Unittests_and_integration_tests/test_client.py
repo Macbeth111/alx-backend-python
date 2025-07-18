@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 """
 Unit and integration tests for GithubOrgClient.
-Tests:
-- org property
-- _public_repos_url property
-- public_repos method
-- has_license static method
-Uses parameterized unit tests and mock API responses.
 """
 
 import unittest
@@ -120,9 +114,9 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
         # Provide responses in order for each test
         cls.mock_get.side_effect = [
-            MockResponse(cls.org_payload),       # for test_public_repos
+            MockResponse(cls.org_payload),
             MockResponse(cls.repos_payload),
-            MockResponse(cls.org_payload),       # for test_public_repos_with_license
+            MockResponse(cls.org_payload),
             MockResponse(cls.repos_payload),
         ]
 
@@ -137,10 +131,11 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         self.assertEqual(client.public_repos(), self.expected_repos)
 
     def test_public_repos_with_license(self):
-    """Test public_repos returns only repos with specified license."""
-    client = GithubOrgClient("google")
-    repos = client.public_repos(license="apache-2.0")
-    self.assertEqual(repos, self.apache2_repos)
+        """Test public_repos returns only repos with specified license."""
+        client = GithubOrgClient("google")
+        repos = client.public_repos(license="apache-2.0")
+        self.assertEqual(repos, self.apache2_repos)
+
 
 class MockResponse:
     """Helper class to mock requests.Response.json()."""
