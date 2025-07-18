@@ -137,13 +137,10 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         self.assertEqual(client.public_repos(), self.expected_repos)
 
     def test_public_repos_with_license(self):
-        """Test public_repos returns only repos with specified license."""
-        client = GithubOrgClient("google")
-        self.assertEqual(
-            client.public_repos(license="apache-2.0"),
-            self.apache2_repos
-        )
-
+    """Test public_repos returns only repos with specified license."""
+    client = GithubOrgClient("google")
+    repos = client.public_repos(license="apache-2.0")
+    self.assertEqual(repos, self.apache2_repos)
 
 class MockResponse:
     """Helper class to mock requests.Response.json()."""
