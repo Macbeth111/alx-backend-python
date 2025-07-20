@@ -14,10 +14,15 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# messaging_app/urls.py
+
 from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Includes conversation/message routes
     path('api/', include('chats.urls')),
+    # Enables DRF browsable API login/logout
+    path('api-auth/', include('rest_framework.urls'))
 ]
