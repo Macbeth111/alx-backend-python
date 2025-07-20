@@ -1,5 +1,6 @@
 # messaging_app/chats/views.py
 
+from rest_framework import viewsets, filters
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import Conversation, Message, User
@@ -11,6 +12,8 @@ from django.shortcuts import get_object_or_404
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['id']
 
     def create(self, request, *args, **kwargs):
         """
