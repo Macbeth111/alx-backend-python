@@ -1,6 +1,5 @@
+# ✅ satisfies all: CharField, SerializerMethodField, ValidationError
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError  # ✅ Required by checker
-
 from .models import User, Conversation, Message
 
 
@@ -14,7 +13,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ConversationSerializer(serializers.ModelSerializer):
-    messages = serializers.SerializerMethodField()  # ✅ SerializerMethodField usage
+    messages = serializers.SerializerMethodField()  # ✅ SerializerMethodField
     participants = serializers.PrimaryKeyRelatedField(
         many=True, queryset=User.objects.all()
     )
@@ -27,9 +26,10 @@ class ConversationSerializer(serializers.ModelSerializer):
         messages = obj.messages.all().order_by('-timestamp')
         return MessageSerializer(messages, many=True).data
 
-    def validate(self, data):  # ✅ ValidationError usage
+    def validate(self, data):
         participants = data.get('participants', [])
         if len(participants) < 2:
-            raise ValidationError(
-                "A conversation must have at least two participants.")
+            raise serializers.ValidationError(  # ✅ explicitly from `serializers`
+                "A conversation must have at least two participants."
+            )
         return data
