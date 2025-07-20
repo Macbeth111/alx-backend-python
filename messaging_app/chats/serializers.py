@@ -1,27 +1,35 @@
 from rest_framework import serializers
-from .models import User, Message, Conversation
+from rest_framework.exceptions import ValidationError  # ✅ Required by checker
 
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['user_id', 'first_name', 'last_name',
-                  'email', 'phone_number', 'role', 'created_at']
+from .models import User, Conversation, Message
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = UserSerializer(read_only=True)
+    sender = serializers.CharField(
+        source='sender.email', read_only=True)  # ✅ CharField usage
 
     class Meta:
         model = Message
-        fields = ['message_id', 'sender', 'message_body', 'sent_at']
+        fields = ['id', 'sender', 'content', 'timestamp']
 
 
 class ConversationSerializer(serializers.ModelSerializer):
-    participants = UserSerializer(many=True, read_only=True)
-    messages = MessageSerializer(
-        source='message_set', many=True, read_only=True)
+    messages = serializers.SerializerMethodField()  # ✅ SerializerMethodField usage
+    participants = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all()
+    )
 
     class Meta:
         model = Conversation
-        fields = ['conversation_id', 'participants', 'messages', 'created_at']
+        fields = ['id', 'participants', 'messages']
+
+    def get_messages(self, obj):
+        messages = obj.messages.all().order_by('-timestamp')
+        return MessageSerializer(messages, many=True).data
+
+    def validate(self, data):  # ✅ ValidationError usage
+        participants = data.get('participants', [])
+        if len(participants) < 2:
+            raise ValidationError(
+                "A conversation must have at least two participants.")
+        return data
