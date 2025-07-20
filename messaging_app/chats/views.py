@@ -1,7 +1,6 @@
 # messaging_app/chats/views.py
 
-from rest_framework import viewsets, filters
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from .models import Conversation, Message, User
 from .serializers import ConversationSerializer, MessageSerializer
@@ -12,8 +11,9 @@ from django.shortcuts import get_object_or_404
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
-    filter_backends = [filters.OrderingFilter]
-    ordering_fields = ['id']
+    filter_backends = [filters.OrderingFilter, filters.SearchFilter]
+    ordering_fields = ['id', 'created_at']
+    search_fields = ['participants__username', 'participants__email']
 
     def create(self, request, *args, **kwargs):
         """
@@ -25,7 +25,10 @@ class ConversationViewSet(viewsets.ModelViewSet):
         """
         participant_ids = request.data.get('participants', [])
         if len(participant_ids) < 2:
-            return Response({"error": "At least two participants are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "At least two participants are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         conversation = Conversation.objects.create()
         conversation.participants.set(participant_ids)
@@ -36,6 +39,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['timestamp']
 
     def create(self, request, *args, **kwargs):
         """
