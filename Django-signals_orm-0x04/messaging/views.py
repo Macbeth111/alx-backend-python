@@ -44,3 +44,11 @@ def inbox(request):
     message_list = [{'sender': m.sender.username,
                      'content': m.content} for m in messages]
     return JsonResponse({'inbox': message_list})
+
+
+@login_required
+def unread_inbox(request):
+    messages = Message.unread.for_user(request.user)
+    message_list = [{'sender': m.sender.username,
+                     'content': m.content} for m in messages]
+    return JsonResponse({'unread': message_list})
