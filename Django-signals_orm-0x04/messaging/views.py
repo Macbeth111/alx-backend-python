@@ -1,3 +1,4 @@
+from django.db import models
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -48,7 +49,12 @@ def inbox(request):
 
 @login_required
 def unread_inbox(request):
-    messages = Message.unread.for_user(request.user)
+    messages = Message.unread.unread_for_user(request.user)
     message_list = [{'sender': m.sender.username,
                      'content': m.content} for m in messages]
     return JsonResponse({'unread': message_list})
+
+
+class UnreadMessagesManager(models.Manager):
+    def unread_for_user(self, user):
+        return self.filter(receiver=user, read=False).only('sender', 'content', 'timestamp')

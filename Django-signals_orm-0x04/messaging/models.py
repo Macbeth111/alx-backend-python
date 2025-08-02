@@ -1,7 +1,8 @@
-from django.db import models
-from django.contrib.auth.models import User
+from django.db import models  # type: ignore
+from django.contrib.auth.models import User  # type: ignore
 
-from django.db import models
+from django.db import models  # type: ignore
+from .managers import UnreadMessagesManager
 
 
 class UnreadMessagesManager(models.Manager):
@@ -33,9 +34,8 @@ class Message(models.Model):
         related_name='replies'
     )
 
-
-objects = models.Manager()  # Default manager
-unread = UnreadMessagesManager()  # Custom manager
+    objects = models.Manager()  # Default manager
+    unread = UnreadMessagesManager()  # Custom manager
 
 
 class MessageHistory(models.Model):
