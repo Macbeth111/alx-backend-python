@@ -7,6 +7,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User  # type: ignore
 from django.http import JsonResponse  # type: ignore
+from django.http import JsonResponse
+from django.views.decorators.cache import cache_page
 
 
 def delete_user(request, user_id):
@@ -58,3 +60,12 @@ def unread_inbox(request):
 class UnreadMessagesManager(models.Manager):
     def unread_for_user(self, user):
         return self.filter(receiver=user, read=False).only('sender', 'content', 'timestamp')
+
+
+@cache_page(60)  # Cache this view for 60 seconds
+def list_messages(request):
+    messages = [
+        {"sender": "alice", "content": "Hello!"},
+        {"sender": "bob", "content": "Hi, how are you?"}
+    ]
+    return JsonResponse({"messages": messages})
